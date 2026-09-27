@@ -5,9 +5,9 @@ Este documento explica las decisiones de stack y por qué están hechas así, no
 ## Stack
 
 - **Next.js 16 (App Router) + React 19 + TypeScript** — frontend y capa de API en un solo framework. Se eligió sobre alternativas porque es el mismo patrón que usan productos a la escala que se mencionó como referencia (feeds sociales con millones de usuarios): SSR/streaming para carga percibida rápida, Server Actions para mutaciones sin levantar un backend aparte, y despliegue flexible (Vercel o cualquier host Node).
-- **Supabase (Postgres)** como base de datos y autenticación. Se prefirió sobre Firestore/Firebase por tres razones concretas para este dominio:
-  1. El feed de Wawa necesita **queries relacionales reales** (cápsulas por familia + tipo + fecha, tags, condiciones de desbloqueo) — en Firestore esto se resuelve con desnormalización manual o Cloud Functions; en Postgres es un índice compuesto.
-  2. **Row Level Security a nivel de fila** en el propio motor de base de datos, en vez de reglas de seguridad como un lenguaje aparte (Firestore Rules) que duplica la lógica de negocio.
+- **Supabase** como único proveedor de backend: Postgres (base de datos), Auth (autenticación) y Storage (fotos/audio) en un mismo proyecto, con las mismas credenciales. No hay ningún otro proveedor de infraestructura en el stack — deliberadamente, para no repartir el proyecto entre varias consolas y facturaciones distintas mientras el equipo es chico. Tres razones concretas para este dominio:
+  1. El feed de Wawa necesita **queries relacionales reales** (cápsulas por familia + tipo + fecha, tags, condiciones de desbloqueo) — eso es un índice compuesto en Postgres, sin desnormalización manual.
+  2. **Row Level Security a nivel de fila** en el propio motor de base de datos: la misma regla de "la familia solo ve sus datos" protege las tablas (`profiles`, `capsules`) y el bucket de Storage (`supabase/migrations/0002_storage.sql`), en vez de mantener la lógica de acceso en dos sistemas distintos.
   3. Migraciones versionadas en SQL (`supabase/migrations/`), auditable y reproducible, en vez de un esquema implícito.
 - **Tailwind CSS v4** para estilos, con tokens de diseño propios (ver abajo) en vez de un theme por defecto.
 - **@google/genai (Gemini)** para las funciones de IA (transcripción de audio, sugerencia de etiquetas, búsqueda semántica de sabiduría). Se optó por llamar al SDK directamente desde Server Actions en vez de introducir Genkit como capa extra: menos piezas que mantener mientras el volumen de flujos de IA es pequeño (3 flujos). Si el número de flujos crece y se necesita orquestación/tracing más sofisticado, migrar a Genkit es un cambio localizado a `src/ai/`.
@@ -17,7 +17,7 @@ Este documento explica las decisiones de stack y por qué están hechas así, no
 El cuello de botella real en una app tipo red social nunca es el framework — son dos cosas:
 
 1. **El feed (fan-out).** El esquema usa `family_id` como unidad de partición (índice `capsules(family_id, kind, created_at desc)`), así que leer el feed de una familia es una sola query indexada, sin importar cuántas familias use la plataforma en total. Esto es deliberadamente más simple que un fan-out-on-write estilo Instagram (que solo tiene sentido con grafos sociales grandes de "seguidores"); Wawa es privado por familia, no un grafo social público, así que ese problema no existe todavía.
-2. **Entrega de medios.** El esquema ya separa `media_url`/`audio_url` como URLs, no como blobs — la intención es que estos apunten a un CDN de objetos (Cloudflare R2 + Cloudflare Images, o S3 + CloudFront) en cuanto haya carga real de fotos/audio. No se conectó todavía porque no hay credenciales de un bucket real; ver `.env.example`.
+2. **Entrega de medios.** El esquema separa `media_url`/`audio_url` como URLs, no como blobs. Esas URLs apuntan a **Supabase Storage** (`src/lib/supabase/storage.ts`, bucket `capsule-media` creado en `supabase/migrations/0002_storage.sql`), que ya sirve los archivos detrás de un CDN — no hace falta un proveedor de objetos aparte (Cloudflare R2, S3...) para el volumen de una app privada por familia. Si algún día el tráfico de medios de un solo bucket se vuelve el cuello de botella real (no antes), migrar a un CDN dedicado es un cambio contenido a ese único archivo.
 
 Lo que **no** se construyó de más: no hay cola de mensajes, no hay microservicios, no hay caché distribuida. Con Postgres + índices correctos + un CDN de medios, esta arquitectura sirve cómodamente cientos de miles de usuarios. Esas piezas se añaden cuando haya métricas reales que lo justifiquen, no antes — añadirlas ahora sería complejidad especulativa.
 
@@ -54,7 +54,7 @@ src/
 │   └── ui/                    Primitivas (button, input, glass-panel…)
 ├── lib/
 │   ├── repositories/           Única capa que conoce Supabase
-│   ├── supabase/                Clientes browser/server + tipos generados
+│   ├── supabase/                Clientes browser/server, Storage, tipos generados
 │   └── types.ts                 Tipos de dominio (Capsule, Profile…)
 └── ai/
     ├── client.ts                Cliente Gemini compartido
@@ -63,7 +63,7 @@ src/
 
 ## Próximos pasos razonables (no hechos todavía, a propósito)
 
-- Conectar un proyecto real de Supabase y correr `supabase/migrations/0001_init.sql`.
-- Conectar un bucket (R2/S3) para `media_url`/`audio_url` en vez de guardar solo texto.
+- Conectar un proyecto real de Supabase y correr las migraciones en orden (`supabase/migrations/0001_init.sql`, luego `0002_storage.sql`).
+- Conectar la subida real de archivos en la UI: `uploadCapsuleMedia()` (`src/lib/supabase/storage.ts`) ya existe, pero `new-snapshot-form.tsx` todavía no la llama para fotos — solo el audio pasa por transcripción, no se sube como archivo.
 - Cuando exista una app real con usuarios: evaluar Capacitor (reusa este mismo código web) antes que React Native — solo justifica una base de código nativa aparte si el rendimiento de cámara/notificaciones push lo exige.
 - Tests: no se añadieron todavía porque no hay lógica de negocio compleja más allá de los repositorios — el primer test que vale la pena escribir es sobre `src/lib/repositories/capsules.ts` una vez haya un proyecto Supabase real para correrlo contra una base de datos de prueba.

@@ -6,7 +6,9 @@ Ver [`ARCHITECTURE.md`](./ARCHITECTURE.md) para el razonamiento detrás del stac
 
 ## Stack
 
-Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (Postgres + Auth) · Gemini (`@google/genai`)
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (Postgres + Auth + Storage) · Gemini (`@google/genai`)
+
+Sin Firebase: Supabase es el único proveedor de backend (base de datos, autenticación y almacenamiento de fotos/audio en un mismo proyecto).
 
 ## Empezar en local
 
@@ -22,7 +24,7 @@ Abre [http://localhost:3000](http://localhost:3000). Sin un proyecto de Supabase
 
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. Copia la URL y la anon key a `.env.local` (ver `.env.example`).
-3. Corre la migración inicial: pega el contenido de `supabase/migrations/0001_init.sql` en el SQL Editor del proyecto, o usa la CLI de Supabase (`supabase db push`).
+3. Corre las migraciones en orden: pega el contenido de `supabase/migrations/0001_init.sql` y luego `0002_storage.sql` en el SQL Editor del proyecto, o usa la CLI de Supabase (`supabase db push`). La segunda crea el bucket de Storage (`capsule-media`) que reemplaza a Firebase Storage para fotos y audios.
 
 ### Conectar Gemini (funciones de IA)
 
