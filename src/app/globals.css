@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/*
+  Wawa design tokens — "warm glass".
+  Not the default AI-slop palette (no violet/indigo gradients, no cold
+  glassmorphism blues). Inspired by golden hour light: parchment, terracotta,
+  amber, deep espresso ink. Every surface is a frosted pane of that light.
+*/
+
+:root {
+  --color-cream-50: #fdf9f2;
+  --color-cream-100: #faf1e2;
+  --color-cream-200: #f3e2c7;
+  --color-sand-300: #e6cca3;
+  --color-sand-400: #d6ab72;
+  --color-amber-400: #e3a857;
+  --color-amber-500: #d68f38;
+  --color-terracotta-400: #d97f56;
+  --color-terracotta-500: #c1613b;
+  --color-terracotta-600: #a14a2b;
+  --color-ink-700: #4a3627;
+  --color-ink-800: #33261b;
+  --color-ink-900: #241a12;
+  --color-espresso-950: #17110c;
+
+  --background: var(--color-cream-50);
+  --foreground: var(--color-ink-900);
+  --surface-tint: 250 240 224;      /* rgb triplet used in glass surfaces */
+  --surface-border: 255 255 255;
+  --glow: var(--color-amber-400);
+
+  --radius-glass: 1.75rem;
+  --shadow-glass: 0 1px 1px rgba(74, 40, 18, 0.05),
+    0 12px 32px -12px rgba(90, 51, 22, 0.28),
+    0 2px 6px -2px rgba(90, 51, 22, 0.18);
+  --shadow-glass-sm: 0 1px 1px rgba(74, 40, 18, 0.05),
+    0 6px 16px -8px rgba(90, 51, 22, 0.24);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--color-espresso-950);
+    --foreground: var(--color-cream-100);
+    --surface-tint: 40 28 20;
+    --surface-border: 255 226 180;
+    --shadow-glass: 0 1px 1px rgba(0, 0, 0, 0.3),
+      0 20px 45px -18px rgba(0, 0, 0, 0.65),
+      0 2px 8px -2px rgba(0, 0, 0, 0.4);
+    --shadow-glass-sm: 0 1px 1px rgba(0, 0, 0, 0.3),
+      0 10px 24px -12px rgba(0, 0, 0, 0.55);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-cream-50: var(--color-cream-50);
+  --color-cream-100: var(--color-cream-100);
+  --color-cream-200: var(--color-cream-200);
+  --color-sand-300: var(--color-sand-300);
+  --color-sand-400: var(--color-sand-400);
+  --color-amber-400: var(--color-amber-400);
+  --color-amber-500: var(--color-amber-500);
+  --color-terracotta-400: var(--color-terracotta-400);
+  --color-terracotta-500: var(--color-terracotta-500);
+  --color-terracotta-600: var(--color-terracotta-600);
+  --color-ink-700: var(--color-ink-700);
+  --color-ink-800: var(--color-ink-800);
+  --color-ink-900: var(--color-ink-900);
+  --color-espresso-950: var(--color-espresso-950);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-jakarta);
+
+  --radius-glass: var(--radius-glass);
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--surface-tint) / 0.4);
+  }
+
+  html {
+    color-scheme: light dark;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: rgb(var(--surface-tint) / 0.8);
+    color: var(--color-terracotta-600);
+  }
+}
+
+@layer components {
+  /* The core "frosted pane" surface used across the app. */
+  .glass {
+    background: rgb(var(--surface-tint) / 0.55);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgb(var(--surface-border) / 0.35);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-sm {
+    background: rgb(var(--surface-tint) / 0.6);
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    border: 1px solid rgb(var(--surface-border) / 0.3);
+    box-shadow: var(--shadow-glass-sm);
+  }
+
+  /* Warm ambient glow used behind hero/auth screens instead of a flat gradient. */
+  .ambient-glow {
+    background-image:
+      radial-gradient(60% 50% at 15% 10%, rgb(227 168 87 / 0.35), transparent 60%),
+      radial-gradient(50% 45% at 85% 20%, rgb(193 97 59 / 0.28), transparent 60%),
+      radial-gradient(70% 60% at 50% 100%, rgb(214 171 114 / 0.25), transparent 60%);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
