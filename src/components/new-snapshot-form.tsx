@@ -29,7 +29,7 @@ export function NewSnapshotForm() {
   const [state, formAction, pending] = useActionState(async (prev: NewCapsuleFormState, formData: FormData) => {
     const result = await createCapsuleAction(prev, formData);
     if (!result.error) {
-      router.push(kind === "instant" ? "/" : `/${kind === "wisdom" ? "wisdom" : "moments"}`);
+      router.push(kind === "instant" ? "/home" : `/${kind === "wisdom" ? "wisdom" : "moments"}`);
     }
     return result;
   }, initialState);

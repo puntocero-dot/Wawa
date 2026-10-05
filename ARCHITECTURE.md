@@ -41,9 +41,10 @@ Se evitó deliberadamente la estética por defecto de una app "hecha con IA" (pa
 ```
 src/
 ├── app/
-│   ├── login/                 Página pública de login (sin header/nav)
+│   ├── page.tsx                Landing pública ("/"): qué es Wawa, sin header/nav
+│   ├── login/                 Login/registro (sin header/nav), con la animación del zorro
 │   ├── (app)/                 Grupo de rutas autenticadas (header + bottom nav)
-│   │   ├── page.tsx           Feed "Instant"
+│   │   ├── home/               Feed "Instant" (antes vivía en "/")
 │   │   ├── new/                Crear cápsula (+ Server Actions)
 │   │   ├── wisdom/             Búsqueda semántica de consejos
 │   │   ├── moments/            Mensajes para hitos futuros

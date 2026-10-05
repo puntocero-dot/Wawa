@@ -65,7 +65,7 @@ export async function createCapsuleAction(
     return { error: error instanceof Error ? error.message : "No se pudo guardar la cápsula." };
   }
 
-  revalidatePath("/");
+  revalidatePath("/home");
   revalidatePath("/wisdom");
   revalidatePath("/moments");
   return { error: null };
