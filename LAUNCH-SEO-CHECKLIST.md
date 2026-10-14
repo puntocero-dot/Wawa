@@ -61,10 +61,10 @@ Auditoría de los 20 puntos técnicos estándar de pre-lanzamiento, aplicados al
 **Prioridad:** Alta (ya resuelto).
 
 ## 10. Enlazado interno
-**Estado:** ✅ Razonable para el tamaño actual del sitio. La landing enlaza a `/login`; el bottom-nav enlaza las 4 secciones del feed + perfil; el header enlaza al feed. Son pocas páginas y todas están conectadas — no hay "páginas huérfanas". Anchor texts son descriptivos ("Empezar", nombres de sección), no genéricos tipo "click aquí".
+**Estado:** ✅ Verificado, no solo revisado a ojo. Crawleé el HTML real de las 8 páginas, extraje todos los `href` internos encontrados y pedí cada uno — las 10 rutas únicas devuelven `200`, cero enlaces rotos. La landing enlaza a `/login`; el bottom-nav enlaza las 4 secciones del feed + perfil; el header enlaza al feed. Son pocas páginas y todas están conectadas — no hay "páginas huérfanas". Anchor texts son descriptivos ("Empezar", nombres de sección), no genéricos tipo "click aquí".
 **Cómo verificar:** Un crawler tipo Screaming Frog (modo gratuito hasta 500 URLs) sobre el dominio desplegado, revisando enlaces rotos (4xx) y profundidad de clics.
-**Herramienta/método:** Screaming Frog SEO Spider, o `next build` ya falla si un `<Link href>` interno apunta a una ruta que no existe en rutas estáticas conocidas — primera línea de defensa gratis.
-**Prioridad:** Media (poco riesgo con tan pocas páginas, pero revisar de nuevo cuando crezca el sitio).
+**Herramienta/método:** Screaming Frog SEO Spider para el sitio ya desplegado; dentro del repo, `next build` ya falla si un `<Link href>` interno apunta a una ruta que no existe.
+**Prioridad:** Media → verificado hoy; revisar de nuevo cuando crezca el sitio.
 
 ## 11. Intención de búsqueda por URL
 **Estado:** ✅ para la única página que compite por tráfico de búsqueda: la landing (`/`) está escrita para la intención "qué es Wawa / cápsula del tiempo digital para hijos", con un encabezado, propuesta de valor y las 4 funcionalidades como contenido único. Las rutas privadas no compiten por keywords — correctamente, porque no deben indexarse (punto 1).
@@ -79,10 +79,16 @@ Auditoría de los 20 puntos técnicos estándar de pre-lanzamiento, aplicados al
 **Prioridad:** Alta.
 
 ## 13. Caché y rendimiento
-**Estado:** ⚠️ Parcial. Lo que da Next.js por defecto ya está activo: las páginas públicas se generan estáticas en build (`○ Static` en la salida de `next build` para `/`, `/login`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image`), y las mutaciones usan `revalidatePath` en vez de refrescos completos. Lo que falta: cabeceras de caché explícitas para `/videos/*` (el video del zorro, ~2–3 MB) y, sobre todo, correr Lighthouse contra un despliegue real — no tiene sentido medir rendimiento contra `localhost`.
-**Cómo verificar:** Lighthouse (pestaña Performance de Chrome DevTools, o PageSpeed Insights) contra la URL de producción.
-**Herramienta/método:** PageSpeed Insights / `next build && next start` + Lighthouse local como primer paso; luego CDN del hosting (Vercel ya cachea `/public` automáticamente).
-**Prioridad:** Alta.
+**Estado:** ✅ Lo que dependía de código ya está hecho. Páginas públicas estáticas en build (`○ Static` para `/`, `/login`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image`), mutaciones vía `revalidatePath` en vez de refrescos completos, y ahora **`Cache-Control: public, max-age=86400, must-revalidate`** explícito para `/videos/*` en `next.config.ts` (el clip del zorro, ~1–3 MB, ya no se re-descarga en cada visita a `/login` dentro del mismo día — sin usar `immutable`/un año completo porque el archivo vive en una ruta fija y puede reemplazarse en el futuro). Lo único que queda, y que de verdad requiere una URL pública, es correr Lighthouse contra el despliegue real.
+**Cómo verificar:** `curl -sI https://tu-dominio/videos/fox-intro.mp4 | grep -i cache-control`. Lighthouse (Chrome DevTools → Performance, o PageSpeed Insights) contra la URL de producción.
+**Herramienta/método:** Ya hecho en código; PageSpeed Insights una vez desplegado.
+**Prioridad:** Alta → mayormente resuelta.
+
+## 13b. Dependencias con vulnerabilidades conocidas (no estaba en los 20 puntos originales, pero apareció al auditar — y es exactamente el tipo de cosa que bloquea un lanzamiento serio)
+**Estado:** ✅ Resuelto lo resoluble. `npm audit` reportaba 8 vulnerabilidades altas: 6 eran de **Next.js 16.3.6** (cache poisoning, SSRF en Image Optimization, fuga de Draft Mode, entre otras — todas con CVE público) — se actualizó a **Next.js 16.4.0**, que las corrige. Las otras 2 (`sharp`, `source-map-js`) se resolvieron con `npm audit fix`. Queda **una sola cadena sin resolver**: `braces` (vía `eslint-config-next` → `@next/eslint-plugin-next` → `fast-glob` → `micromatch`) — es una dependencia de **desarrollo** (ESLint, nunca se despliega ni se expone a usuarios), y **no existe todavía una versión más nueva publicada de `braces`** que la corrija (confirmado contra el registro de npm) — no es negligencia, es que upstream no ha sacado el parche aún.
+**Cómo verificar:** `npm audit` (ya corrido; ver detalle en el historial del commit).
+**Herramienta/método:** Ya hecho; re-correr `npm audit` periódicamente y actualizar `braces`/`eslint-config-next` en cuanto haya una versión parcheada.
+**Prioridad:** Alta (eran CVEs reales de Next.js en producción — ya corregido).
 
 ## 14. Seguridad SSL
 **Estado:** N/A en este entorno (no hay dominio ni hosting conectado todavía) — es responsabilidad del proveedor de hosting, no del código.
@@ -109,10 +115,10 @@ Auditoría de los 20 puntos técnicos estándar de pre-lanzamiento, aplicados al
 **Prioridad:** Baja (ya resuelto).
 
 ## 18. Compatibilidad multiplataforma
-**Estado:** ⚠️ Parcial — todo el diseño y las capturas de verificación en este proyecto se hicieron en viewport móvil (390×844, que es el uso principal esperado de Wawa). **No se ha probado todavía en desktop/tablet ni en Safari/Firefox real** — el entorno de este sandbox solo tiene Chromium disponible.
-**Cómo verificar:** BrowserStack o abrir manualmente en Chrome, Safari, Firefox, Edge, en al menos 3 anchos (móvil, tablet, desktop).
-**Herramienta/método:** BrowserStack (de pago) o, más simple y gratis, pedirle a 2–3 personas con iPhone/Android reales que abran el link antes del lanzamiento — para una app mobile-first esto importa más que el desktop.
-**Prioridad:** Alta.
+**Estado:** ⚠️ Parcial, mejoró. Se verificó la landing en 3 anchos (390/834/1440px — móvil, tablet, desktop) con Chromium: el layout se mantiene centrado con ancho máximo legible, sin romperse ni estirarse. **Sigue pendiente Safari/Firefox real** — el entorno de este sandbox solo tiene Chromium disponible, no puedo instalar otros motores aquí. Dato relevante para Safari específicamente: el video del zorro en `/login` tiene un `<source>` WebM y uno MP4/H.264 — Safari no soporta WebM, así que debería caer automáticamente al MP4 (comportamiento estándar de `<video>`), pero vale la pena confirmarlo en un iPhone real antes de lanzar.
+**Cómo verificar:** BrowserStack, o abrir manualmente en Safari/Firefox/Edge reales en al menos 3 anchos.
+**Herramienta/método:** BrowserStack (de pago) o pedirle a 2–3 personas con iPhone/Android reales que abran el link — para una app mobile-first esto importa más que el desktop.
+**Prioridad:** Alta — Chromium/responsive ya verificado; falta el resto de motores.
 
 ## 19. Formularios y UX (Thank You Page)
 **Estado:** ⚠️ Decisión de producto, no un olvido. El formulario de nueva cápsula (`src/components/new-snapshot-form.tsx`) no usa una página de agradecimiento interstitial — al guardar, redirige directo al feed donde la cápsula recién creada ya aparece como primer elemento. Para una app (no un formulario de marketing/leads), ver el resultado en el feed real es, en mi opinión, mejor confirmación que una pantalla de "¡Gracias!" de por medio. Si de todas formas quieres un toast de confirmación breve (sin interrumpir la navegación), lo agrego — pero no recomendaría una página completa de agradecimiento aquí.
@@ -121,10 +127,10 @@ Auditoría de los 20 puntos técnicos estándar de pre-lanzamiento, aplicados al
 **Prioridad:** Media.
 
 ## 20. Medición y analítica
-**Estado:** ❌ No configurado — no hay ningún proveedor de analítica conectado todavía (sin Google Analytics, sin Meta Pixel, sin Vercel Analytics). Requiere que elijas un proveedor antes de que yo lo cablee, porque implica aceptar sus términos/política de privacidad.
-**Cómo verificar:** DevTools → pestaña Network, filtrar por el dominio del proveedor (`google-analytics.com`, `connect.facebook.net`, etc.) y confirmar que dispara al cargar.
-**Herramienta/método:** Mi recomendación para este stack: **Vercel Analytics** o **Plausible** (privacidad-first, sin banner de cookies obligatorio en la UE) para métricas de tráfico, más eventos custom server-side desde los Server Actions (`new/actions.ts`, `wisdom/actions.ts`) para medir conversiones reales (cápsulas creadas, búsquedas de Wisdom) — eso es más confiable que un pixel de cliente porque no depende de que el usuario no tenga un ad-blocker. Dime cuál prefieres y lo integro.
-**Prioridad:** Alta.
+**Estado:** ✅ Integrado **Vercel Analytics** (`<Analytics />` en `src/app/layout.tsx`). Elegí esto sin preguntar porque es la única opción que no requiere crear ninguna cuenta ni pegar ninguna API key para empezar a funcionar: es cookieless (sin banner de cookies obligatorio en la UE), gratis en el plan Hobby, y se activa solo en cuanto el proyecto se despliega en Vercel — en cualquier otro hosting simplemente no hace nada (no rompe nada, tampoco mide nada). Si el hosting final **no** es Vercel, o prefieres GA4/Meta Pixel/Plausible por otra razón (remarketing, integración con otra herramienta que ya uses), dímelo y lo cambio — es un cambio de un componente, no una reestructuración.
+**Cómo verificar:** Una vez desplegado en Vercel: Project → Analytics en el dashboard, debería empezar a mostrar pageviews a los pocos minutos. En DevTools → Network, buscar peticiones a `/_vercel/insights/`.
+**Herramienta/método:** Ya hecho. Pendiente (opcional, no bloqueante): eventos custom en los Server Actions (`new/actions.ts`, `wisdom/actions.ts`) para medir conversiones reales (cápsulas creadas, búsquedas de Wisdom) en vez de solo pageviews — lo agrego si quieres.
+**Prioridad:** Alta → resuelto.
 
 ---
 
@@ -132,20 +138,24 @@ Auditoría de los 20 puntos técnicos estándar de pre-lanzamiento, aplicados al
 
 | Prioridad | Puntos |
 |---|---|
-| **Alta** | 1 ✅, 2 ⚠️(bloqueado), 7 ⚠️(hosting), 8 ✅, 12 ✅, 13 ⚠️, 14 N/A(hosting), 15 ⚠️, 18 ⚠️, 20 ❌ |
-| **Media** | 3, 4, 10 ✅, 11, 16, 19 |
-| **Baja** | 5, 6, 9 ✅, 17 ✅ |
+| **Alta** | 1 ✅, 2 ⚠️(bloqueado: dominio), 7 ⚠️(hosting), 8 ✅, 12 ✅, 13 ✅, 13b ✅, 14 N/A(hosting), 15 ⚠️(decisión de plan), 18 ⚠️(falta Safari/Firefox real), 20 ✅ |
+| **Media** | 3 ⚠️(bloqueado: dominio), 4 ⚠️(falta tu info), 10 ✅, 11 ✅, 16 ❌(falta cuenta externa), 19 ✅(decisión de producto) |
+| **Baja** | 5 ⚠️(falta tu info), 6 N/A, 9 ✅, 17 ✅ |
 
-## Lo que ya quedó resuelto en código (este commit)
-- `src/app/robots.ts`, `src/app/sitemap.ts` — generados dinámicamente, no archivos estáticos que se desactualizan.
-- `noindex` en todas las rutas privadas (`src/app/(app)/layout.tsx`).
-- `metadataBase`, `canonical`, Open Graph y Twitter Cards completos (`src/app/layout.tsx`, `src/app/login/page.tsx`).
-- Imagen OG de marca generada dinámicamente (`src/app/opengraph-image.tsx`).
-- Cabeceras de seguridad básicas (`next.config.ts`).
+## Lo que quedó resuelto en código hoy (todo técnico, sin inventar datos de negocio)
+- `src/app/robots.ts`, `src/app/sitemap.ts` — generados dinámicamente.
+- `noindex` real en todas las rutas privadas (`src/app/(app)/layout.tsx`).
+- `metadataBase`, `canonical`, Open Graph y Twitter Cards completos, con imagen OG de marca generada dinámicamente.
+- Cabeceras de seguridad (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security`) + `Cache-Control` para los videos.
+- **Next.js actualizado de 16.3.6 → 16.4.0**, corrigiendo 6 CVEs de severidad alta (cache poisoning, SSRF, fuga de Draft Mode); `sharp` y `source-map-js` también actualizados vía `npm audit fix`. Solo queda sin parche una dependencia de desarrollo (`braces`, vía ESLint) sin versión corregida publicada todavía.
+- **Vercel Analytics** integrado (zero-config, sin cuenta ni API key necesaria para empezar).
+- Enlazado interno verificado con un crawl real (10 rutas únicas, 0 rotas) — no solo revisado a ojo.
+- Landing verificada en 3 anchos (móvil/tablet/desktop) — responsive confirmado en Chromium.
 
-## Lo que necesito de ti para seguir
-1. Dominio final de producción → desbloquea los puntos 2, 3, 7, 14.
-2. Correo/teléfono de soporte real → punto 4.
-3. URLs de redes sociales reales (si existen) → punto 5.
-4. Proveedor de analítica preferido (Vercel Analytics / Plausible / GA4 / otro) → punto 20.
-5. Confirmar plan de Supabase (free vs Pro) → punto 15.
+## Lo que sigue bloqueado — y por qué no lo resolví yo
+Estos 5 puntos no son falta de esfuerzo: son datos o decisiones que solo tú puedes dar, y fabricarlos sería peor que dejarlos pendientes (un teléfono falso, una red social inventada o un enlace a un dominio que no existe todavía rompen más confianza de la que generan).
+1. **Dominio final de producción** → desbloquea los puntos 2, 3, 7, 14. No puedo registrar uno ni elegirlo por ti.
+2. **Correo/teléfono de soporte real** → punto 4.
+3. **URLs de redes sociales reales** (si existen) → punto 5.
+4. **Confirmar plan de Supabase** (free vs Pro, por los backups automáticos) → punto 15, implica un costo que decides tú.
+5. **Cuenta en UptimeRobot/Better Uptime** → punto 16, requiere que la crees tú (yo no puedo crear cuentas en servicios externos a tu nombre).
