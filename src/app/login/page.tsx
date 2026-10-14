@@ -4,7 +4,10 @@ import { SeasonalAmbient } from "@/components/seasonal-ambient";
 import { FoxIntroVideo } from "@/components/fox-intro-video";
 import { LoginForm } from "@/components/login-form";
 
-export const metadata: Metadata = { title: "Entrar" };
+export const metadata: Metadata = {
+  title: "Entrar",
+  alternates: { canonical: "/login" },
+};
 
 export default function LoginPage() {
   return (

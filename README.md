@@ -2,7 +2,7 @@
 
 **Tu sabiduría, su futuro.** Una cápsula del tiempo digital para que los padres guarden recuerdos, consejos y secretos, y sus hijos los descubran en el momento justo del futuro.
 
-Ver [`ARCHITECTURE.md`](./ARCHITECTURE.md) para el razonamiento detrás del stack, el modelo de datos y las decisiones de escalabilidad.
+Ver [`ARCHITECTURE.md`](./ARCHITECTURE.md) para el razonamiento detrás del stack, el modelo de datos y las decisiones de escalabilidad. Ver [`LAUNCH-SEO-CHECKLIST.md`](./LAUNCH-SEO-CHECKLIST.md) para la checklist técnica de pre-lanzamiento (SEO, indexación, seguridad, analítica).
 
 ## Stack
 
@@ -29,6 +29,10 @@ Abre [http://localhost:3000](http://localhost:3000). Sin un proyecto de Supabase
 ### Conectar Gemini (funciones de IA)
 
 Añade `GOOGLE_GENERATIVE_AI_API_KEY` en `.env.local` (consíguela en [Google AI Studio](https://aistudio.google.com/apikey)). Sin esta variable, las funciones de IA (transcripción de audio, sugerencia de etiquetas, búsqueda semántica en Wisdom) responden con un mensaje de "no configurado" en vez de fallar.
+
+### Antes de desplegar a producción
+
+Añade `NEXT_PUBLIC_SITE_URL` en `.env.local`/variables de entorno del hosting con el dominio final (p.ej. `https://wawa.app`, sin slash final) — de eso dependen `metadataBase`, las URLs canónicas, Open Graph, `robots.txt` y `sitemap.xml`. Ver [`LAUNCH-SEO-CHECKLIST.md`](./LAUNCH-SEO-CHECKLIST.md) para el resto de la checklist.
 
 ## Estructura
 

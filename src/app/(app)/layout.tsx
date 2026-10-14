@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/header";
 import { BottomNav } from "@/components/bottom-nav";
+
+// Everything under this route group is a signed-in family's private
+// capsules — never indexable, whatever title/description a page sets.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true },
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

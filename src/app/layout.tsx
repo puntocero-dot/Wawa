@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -15,12 +16,30 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Wawa — Tu sabiduría, su futuro",
-    template: "%s · Wawa",
+    default: `${SITE_NAME} — Tu sabiduría, su futuro`,
+    template: `%s · ${SITE_NAME}`,
   },
-  description:
-    "Wawa es una cápsula del tiempo digital: guarda recuerdos, consejos y secretos para que tus hijos los descubran en el momento justo del futuro.",
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_ES",
+    url: "/",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Tu sabiduría, su futuro`,
+    description: SITE_DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — Tu sabiduría, su futuro`,
+    description: SITE_DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
 };
 
 export const viewport: Viewport = {
